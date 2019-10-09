@@ -75,7 +75,7 @@ void smolsort(int arr[], int l, int r)
                 key = arr[j];
             }
         }
-        swap(&arr[i], &arr[ind]);
+        swap(&arr[i], &arr[ind]);	Calculated weight	Grade	Range	Percentage	Feedback	
     }
 }
 
@@ -93,7 +93,7 @@ void Process_quicksort(int arr[], int l, int r)
     if (pid < 0)
     {
         printf("Error while forking\n");
-        return;
+        return ;
     }
     else if (pid == 0)
     {
