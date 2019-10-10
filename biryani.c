@@ -78,6 +78,7 @@ pthread_mutex_t mutex3 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex4 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t szofqueuemutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t Robot_mutex[10005];
+pthread_mutex_t Table_mutex[10005];
 
 void biryani_ready(int id_number)
 {
@@ -110,58 +111,71 @@ void *Robot_prepare_food(void *thr)
 void ready_to_serve_table(int number_of_slots, int id_number)
 {
     readyqueue[sizeofqueue - 1] = id_number;
-    int curr = sizeofqueue - 1;
+    int curr = sizeofqueue - 1; 
     pthread_mutex_unlock(&szofqueuemutex);
     printf("Slots assigned to %d ********* %d in readyqueue at index %d\n", id_number, number_of_slots, curr);
+    fflush(stdout);
     while (Tables[readyqueue[curr]].current_slots != number_of_slots)
     {
-        // printf("Number of slot %d and curr value is %d at index %d\n", number_of_slots, Tables[readyqueue[curr]].current_slots,curr);
-        // usleep(20);
-        ;
+        // printf("%d\n",Tables[readyqueue[curr]].current_slots);
+        // fflush(stdout);
+        pthread_mutex_lock(&Table_mutex[id_number]);
+        pthread_mutex_unlock(&Table_mutex[id_number]);
     }
-    printf("Table %d finished serving %d slots at index\n", id_number, number_of_slots);
-    pthread_mutex_lock(&mutex4);
+    pthread_mutex_lock(&mutex);
     readyqueue[curr] = -1;
-    pthread_mutex_unlock(&mutex4);
+    pthread_mutex_unlock(&mutex);
+    printf("Table %d finished serving %d slots at index\n", id_number, number_of_slots);
 }
 
 void student_in_slot(int index)
 {
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&Table_mutex[readyqueue[index]]);
     Tables[readyqueue[index]].current_slots++;
-    usleep(30);
-    // printf("filled slots for table %d are %d at index %d\n", readyqueue[index], Tables[readyqueue[index]].current_slots, index);
-    pthread_mutex_unlock(&mutex);
+    printf("filled slots for table %d are %d at index %d\n", readyqueue[index], Tables[readyqueue[index]].current_slots, index);
+    pthread_mutex_unlock(&Table_mutex[readyqueue[index]]);  
+    usleep(50);
+
 }
 
-// void wait_for_slot(int id_number)
-// {
-//     int i = 0;
-//     while (1)
-//     {
-//         for (; i < sizeofqueue;)
-//         {
-//             // printf("Value of i is %d when sizeofqueue is %d\n", i, sizeofqueue);
-//             fflush(stdout);
-//             pthread_mutex_lock(&mutex4);
-//             if (readyqueue[i] == -1)
-//             {
-//                 // printf("REREREREREREARE index %d\n", i);
-//                 // fflush(stdout);
-//                 i = rand() % (sizeofqueue);
-//                 // i++;
-//                 pthread_mutex_unlock(&mutex4);
+void wait_for_slot(int id_number)
+{
+    int i = 0;
+    while (1)
+    {
+        for (; i < sizeofqueue;)
+        {
+            // printf("Value of i is %d when sizeofqueue is %d\n", i, sizeofqueue);
+            fflush(stdout);
+            pthread_mutex_lock(&mutex4);
+            if (readyqueue[i] == -1)
+            {
+                i = rand() % (sizeofqueue);
+                pthread_mutex_unlock(&mutex4);
+                usleep(40);
 
-//                 break;
-//             }
-//             printf("Student %d served at table %d index\n", id_number, readyqueue[i]);
-//             fflush(stdout);
-//             student_in_slot(i);
-//             pthread_mutex_unlock(&mutex4);
-//             return;
-//         }
-//     }
-// }
+                break;
+            }
+            // printf("Student %d served at table %d index\n", id_number, readyqueue[i]);
+            fflush(stdout);
+            student_in_slot(i);
+            pthread_mutex_lock(&mutex);
+            pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex4);
+            usleep(40);
+            return;
+        }
+    }
+}
+
+void *Student_loop(void *thr)
+{
+    struct id_number *temp = (struct id_number *)thr;
+    int id_number = temp->id;
+    // printf("Entered wait for student %d\n", id_number);
+    wait_for_slot(id_number);
+    return NULL;
+}
 
 void *Table_loop(void *thr)
 {
@@ -198,21 +212,12 @@ void *Table_loop(void *thr)
     return NULL;
 }
 
-// void *Student_loop(void *thr)
-// {
-//     struct id_number *temp = (struct id_number *)thr;
-//     int id_number = temp->id;
-//     // printf("Entered wait for student %d\n", id_number);
-//     wait_for_slot(id_number);
-//     return NULL;
-// }
-
 int main()
 {
 
     for (int i = 0; i < 10005; i++)
-        pthread_mutex_init(&Robot_mutex[i], NULL);
-    // srand(time(NULL));
+        pthread_mutex_init(&Robot_mutex[i], NULL), pthread_mutex_init(&Table_mutex[i], NULL);
+    srand(time(NULL));
     printf("Enter number of robots / tables / students\n");
     scanf("%d %d %d", &n_of_robots, &n_of_tables, &n_of_students);
     Robots = shareMemRobot((n_of_robots + 1) * sizeof(struct robot));
@@ -242,31 +247,32 @@ int main()
 
     // for (int i = readypointer; i < sizeofqueue; i++)
     //     printf("Table %d has %d servings", readyqueue[i], Tables[readyqueue[i]].current_capacity);
-    while (n_of_students > 0)
-    {
-        for (int i = 0; i < sizeofqueue; i++)
-        {
-            if (readyqueue[i] == -1)
-                continue;
-            student_in_slot(i);
-        }
-    }
+    // while (n_of_students > 0)
+    // {
+    //     for (int i = 0; i < sizeofqueue; i++)
+    //     {
+    //         if (readyqueue[i] == -1)
+    //             continue;
+    //         student_in_slot(i);
+    //         n_of_students--;
+    //     }
+    // }
+    // uncomment if students dont work
     srand(time(NULL));
-    // for (int iiii = 1; iiii <= n_of_students;)
-    // {
-    //     struct id_number temp;
-    //     temp.id = iiii;
-    //     pthread_create(&Students[iiii].thread_id, NULL, (void *)Student_loop, &temp);
-    //     iiii++;
-    //     usleep(30000);
-    // }
-    printf("AT WHILE LOOP\n");
-    while (1)
-        ;
-    // for (int i = 1; i <= n_of_students; i++)
-    // {
-    //     pthread_join(Students[i].thread_id, NULL);
-    //     printf("Student %d finished eating\n", i);
-    //     fflush(stdout);
-    // }
+    for (int iiii = 1; iiii <= n_of_students;)
+    {
+        struct id_number temp;
+        temp.id = iiii;
+        pthread_create(&Students[iiii].thread_id, NULL, (void *)Student_loop, &temp);
+        iiii++;
+        usleep(30000);
+    }
+    // while (1)
+    // ;
+    for (int i = 1; i <= n_of_students; i++)
+    {
+        pthread_join(Students[i].thread_id, NULL);
+        printf("Student %d finished eating\n", i);
+        fflush(stdout);
+    }
 }

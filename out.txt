@@ -1,5 +1,32 @@
 Enter number of robots / tables / students
-Robot 3 prepared 1 vessels,each with capacity 49
-Robot 5 prepared 7 vessels,each with capacity 25
-Table 5 was refilled by robot 3 and has 49 servings left
-Biryani finished for Robot 3
+Robot 3 prepared 3 vessels,each with capacity 49
+Robot 5 prepared 7 vessels,each with capacity 38
+Table 3 was refilled by robot 3 and has 49 servings left
+Number of slots 2 at index with sizeofqueue 1
+Table 1 was refilled by robot 5 and has 38 servings left
+Table 2 was refilled by robot 3 and has 49 servings left
+Slots assigned to 3 ********* 2 in readyqueue at index 0
+filled slots for table 3 are 1 at index 0
+filled slots for table 3 are 2 at index 0
+Table 3 finished serving 2 slots at index
+Number of slots 9 at index with sizeofqueue 2
+Slots assigned to 3 ********* 9 in readyqueue at index 1
+filled slots for table 3 are 1 at index 1
+filled slots for table 3 are 2 at index 1
+filled slots for table 3 are 3 at index 1
+filled slots for table 3 are 4 at index 1
+filled slots for table 3 are 5 at index 1
+filled slots for table 3 are 6 at index 1
+filled slots for table 3 are 7 at index 1
+filled slots for table 3 are 8 at index 1
+filled slots for table 3 are 9 at index 1
+Table 3 finished serving 9 slots at index
+Number of slots 2 at index with sizeofqueue 3
+Slots assigned to 3 ********* 2 in readyqueue at index 2
+Number of slots 8 at index with sizeofqueue 4
+Slots assigned to 2 ********* 8 in readyqueue at index 3
+Number of slots 4 at index with sizeofqueue 5
+Slots assigned to 1 ********* 4 in readyqueue at index 4
+Robot 1 prepared 9 vessels,each with capacity 37
+Robot 2 prepared 1 vessels,each with capacity 28
+Robot 4 prepared 8 vessels,each with capacity 37
