@@ -37,6 +37,7 @@ struct table
 struct student
 {
     pthread_t thread_id;
+    int served;
     char mode;
 };
 
@@ -78,6 +79,7 @@ void biryani_ready(int id_number)
         ;
     }
     printf("Biryani finished for Robot %d\n", id_number);
+    fflush(stdout);
 }
 
 void *Robot_prepare_food(void *thr)
@@ -91,6 +93,7 @@ void *Robot_prepare_food(void *thr)
         Robots[id_number].vessels_prepared = rand() % (10 - 1 + 1) + 1;
         Robots[id_number].capacity_of_vessel = rand() % (50 - 25 + 1) + 25;
         printf("Robot %d prepared %d vessels,each with capacity %d\n", id_number, Robots[id_number].vessels_prepared, Robots[id_number].capacity_of_vessel);
+        fflush(stdout);
         biryani_ready(id_number);
     }
     return NULL;
@@ -126,12 +129,13 @@ void *Table_loop(void *thr)
             {
                 Tables[id_number].current_capacity = Robots[i].capacity_of_vessel;
                 // pthread_mutex_lock(&mutex);
-                // readyqueue[sizeofqueue] = id_number;
                 // sizeofqueue++;
                 // pthread_mutex_unlock(&mutex);
+                readyqueue[sizeofqueue] = id_number;
                 sizeofqueue++;
                 // pthread_mutex_lock(&mutex);
                 printf("Table %d was refilled by robot %d and has %d servings left\n", id_number, i, Robots[i].capacity_of_vessel);
+                fflush(stdout);
                 Robots[i].vessels_prepared--;
                 // ready_to_serve_table(number_of_slots,id_number);
             }
@@ -139,7 +143,7 @@ void *Table_loop(void *thr)
             if (Tables[id_number].current_capacity > 0)
             {
                 int number_of_slots = min(Tables[readyqueue[readypointer]].current_capacity, min(rand() % (10 - 1 + 1) + 1, n_of_students));
-                Tables[readyqueue[readypointer]].current_slots = number_of_slots;
+                Tables[readyqueue[readypointer]].current_slots = 0;
                 ready_to_serve_table(number_of_slots, id_number);
                 Tables[readyqueue[readypointer]].current_capacity -= number_of_slots;
             }
@@ -148,35 +152,48 @@ void *Table_loop(void *thr)
     return NULL;
 }
 
-void wait_for_slot()
+void student_in_slot(int index)
+{
+    Tables[readyqueue[index]].current_slots++;
+    usleep(30);
+}
+
+void wait_for_slot(int id_number)
 {
     int i = 0;
     while (1)
     {
-        for (; i < sizeofqueue; i++)
+        for (; i < sizeofqueue;)
         {
+            printf("Value of i is %d when sizeofqueue is %d\n", i, sizeofqueue);
+            fflush(stdout);
             if (readyqueue[i] == -1)
-                continue;
+            {
+                i = rand() % (sizeofqueue);
+                break;
+            }
+            printf("Student %d served at table %d\n", id_number, readyqueue[i]);
+            fflush(stdout);
             student_in_slot(i);
-            usleep(30);
+            return;
         }
     }
 }
 
-void *Robot_prepare_food(void *thr)
+void *Student_loop(void *thr)
 {
     struct id_number *temp = (struct id_number *)thr;
     int id_number = temp->id;
-    while (1)
-    {
-        wait_for_slot();
-    }
+    // printf("Entered wait for student %d\n", id_number);
+    wait_for_slot(id_number);
     return NULL;
 }
 
 int main()
 {
     srand(time(NULL));
+    for (int i=0;i<100;i++)
+    printf("%d\n",rand()%50);
     printf("Enter number of robots / tables / students\n");
     scanf("%d %d %d", &n_of_robots, &n_of_tables, &n_of_students);
     Robots = shareMemRobot((n_of_robots + 1) * sizeof(struct robot));
@@ -184,6 +201,8 @@ int main()
     Students = shareMemStudent((n_of_students + 1) * sizeof(struct student));
     for (int i = 1; i <= n_of_tables; i++)
         Tables[i].current_capacity = 0;
+    for (int i = 0; i < 10000; i++)
+        readyqueue[i] = -1;
     for (int i = 1; i <= n_of_robots;)
     {
         struct id_number temp;
@@ -200,9 +219,10 @@ int main()
         i++;
         usleep(20);
     }
+    // fflush(stdout);
 
-    for (int i = readypointer; i < sizeofqueue; i++)
-        printf("Table %d has %d servings", readyqueue[i], Tables[readyqueue[i]].current_capacity);
+    // for (int i = readypointer; i < sizeofqueue; i++)
+    //     printf("Table %d has %d servings", readyqueue[i], Tables[readyqueue[i]].current_capacity);
     // while (n_of_students > 0)
     // {
     //     if (readypointer < sizeofqueue)
@@ -218,12 +238,21 @@ int main()
     //         }
     //     }
     // }
-    for (int i = 1; i < i = n_of_students;)
+    srand(time(NULL));
+    for (int iiii = 1; iiii <= n_of_students;)
     {
         struct id_number temp;
-        temp.id = i;
-        pthread_create(&Students[i].thread_id, NULL, (void *)Student_loop, &temp);
-        i++;
-        usleep(20);
+        temp.id = iiii;
+        pthread_create(&Students[iiii].thread_id, NULL, (void *)Student_loop, &temp);
+        iiii++;
+        usleep(30000);
+    }
+    // while (1)
+    // ;
+    for (int i = 1; i <= n_of_students; i++)
+    {
+        pthread_join(Students[i].thread_id, NULL);
+        printf("Student %d finished eating\n", i);
+        fflush(stdout);
     }
 }
