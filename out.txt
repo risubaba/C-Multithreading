@@ -1,0 +1,5 @@
+Enter number of robots / tables / students
+Robot 3 prepared 1 vessels,each with capacity 49
+Robot 5 prepared 7 vessels,each with capacity 25
+Table 5 was refilled by robot 3 and has 49 servings left
+Biryani finished for Robot 3
