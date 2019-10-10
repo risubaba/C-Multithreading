@@ -111,7 +111,7 @@ void *Robot_prepare_food(void *thr)
 void ready_to_serve_table(int number_of_slots, int id_number)
 {
     readyqueue[sizeofqueue - 1] = id_number;
-    int curr = sizeofqueue - 1; 
+    int curr = sizeofqueue - 1;
     pthread_mutex_unlock(&szofqueuemutex);
     printf("Slots assigned to %d ********* %d in readyqueue at index %d\n", id_number, number_of_slots, curr);
     fflush(stdout);
@@ -133,9 +133,8 @@ void student_in_slot(int index)
     pthread_mutex_lock(&Table_mutex[readyqueue[index]]);
     Tables[readyqueue[index]].current_slots++;
     printf("filled slots for table %d are %d at index %d\n", readyqueue[index], Tables[readyqueue[index]].current_slots, index);
-    pthread_mutex_unlock(&Table_mutex[readyqueue[index]]);  
+    pthread_mutex_unlock(&Table_mutex[readyqueue[index]]);
     usleep(50);
-
 }
 
 void wait_for_slot(int id_number)
@@ -145,12 +144,14 @@ void wait_for_slot(int id_number)
     {
         for (; i < sizeofqueue;)
         {
+            // printf("%d\n",i);
             // printf("Value of i is %d when sizeofqueue is %d\n", i, sizeofqueue);
             fflush(stdout);
             pthread_mutex_lock(&mutex4);
             if (readyqueue[i] == -1)
             {
-                i = rand() % (sizeofqueue);
+                i++;
+                // i = rand() % (sizeofqueue);
                 pthread_mutex_unlock(&mutex4);
                 usleep(40);
 
@@ -174,6 +175,8 @@ void *Student_loop(void *thr)
     int id_number = temp->id;
     // printf("Entered wait for student %d\n", id_number);
     wait_for_slot(id_number);
+    printf("Student %d finished eating\n",id_number);
+    fflush(stdout);
     return NULL;
 }
 
@@ -258,7 +261,7 @@ int main()
     //     }
     // }
     // uncomment if students dont work
-    srand(time(NULL));
+    // srand(time(NULL));
     for (int iiii = 1; iiii <= n_of_students;)
     {
         struct id_number temp;
@@ -272,7 +275,7 @@ int main()
     for (int i = 1; i <= n_of_students; i++)
     {
         pthread_join(Students[i].thread_id, NULL);
-        printf("Student %d finished eating\n", i);
-        fflush(stdout);
+        // printf("Student %d finished eating\n", i);
+        // fflush(stdout);
     }
 }
