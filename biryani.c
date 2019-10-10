@@ -95,17 +95,19 @@ void *Robot_prepare_food(void *thr)
     }
     return NULL;
 }
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
 
-void ready_to_serve_table(int number_of_slots,int id_number)
+void ready_to_serve_table(int number_of_slots, int id_number)
 {
-    readyqueue[sizeofqueue]=id_number;
+    readyqueue[sizeofqueue] = id_number;
     int curr = sizeofqueue;
-    while (Tables[readyqueue[curr]].current_slots!=number_of_slots)
+    while (Tables[readyqueue[curr]].current_slots != number_of_slots)
     {
         ;
     }
+    readyqueue[curr] = -1;
 }
 
 void *Table_loop(void *thr)
@@ -134,15 +136,40 @@ void *Table_loop(void *thr)
                 // ready_to_serve_table(number_of_slots,id_number);
             }
             pthread_mutex_unlock(&mutex2);
-            if (Tables[id_number].current_capacity>0)
+            if (Tables[id_number].current_capacity > 0)
             {
                 int number_of_slots = min(Tables[readyqueue[readypointer]].current_capacity, min(rand() % (10 - 1 + 1) + 1, n_of_students));
                 Tables[readyqueue[readypointer]].current_slots = number_of_slots;
-                ready_to_serve_table(number_of_slots,id_number);
+                ready_to_serve_table(number_of_slots, id_number);
                 Tables[readyqueue[readypointer]].current_capacity -= number_of_slots;
-
             }
         }
+    }
+    return NULL;
+}
+
+void wait_for_slot()
+{
+    int i = 0;
+    while (1)
+    {
+        for (; i < sizeofqueue; i++)
+        {
+            if (readyqueue[i] == -1)
+                continue;
+            student_in_slot(i);
+            usleep(30);
+        }
+    }
+}
+
+void *Robot_prepare_food(void *thr)
+{
+    struct id_number *temp = (struct id_number *)thr;
+    int id_number = temp->id;
+    while (1)
+    {
+        wait_for_slot();
     }
     return NULL;
 }
@@ -176,19 +203,27 @@ int main()
 
     for (int i = readypointer; i < sizeofqueue; i++)
         printf("Table %d has %d servings", readyqueue[i], Tables[readyqueue[i]].current_capacity);
-    while (n_of_students > 0)
+    // while (n_of_students > 0)
+    // {
+    //     if (readypointer < sizeofqueue)
+    //     {
+    //         // printf("+++++++++++++++++++++ %d\n", Tables[readyqueue[readypointer]].current_capacity);
+    //         int student_to_serve = min(Tables[readyqueue[readypointer]].current_capacity, min(rand() % (10 - 1 + 1) + 1, n_of_students));
+    //         // printf("Serving %d students at Table number %d\n", student_to_serve, readyqueue[readypointer]);
+    //         n_of_students -= student_to_serve;
+    //         Tables[readyqueue[readypointer]].current_capacity -= student_to_serve;
+    //         if (Tables[readyqueue[readypointer]].current_capacity == 0)
+    //         {
+    //             readypointer++;
+    //         }
+    //     }
+    // }
+    for (int i = 1; i < i = n_of_students;)
     {
-        if (readypointer < sizeofqueue)
-        {
-            // printf("+++++++++++++++++++++ %d\n", Tables[readyqueue[readypointer]].current_capacity);
-            int student_to_serve = min(Tables[readyqueue[readypointer]].current_capacity, min(rand() % (10 - 1 + 1) + 1, n_of_students));
-            // printf("Serving %d students at Table number %d\n", student_to_serve, readyqueue[readypointer]);
-            n_of_students -= student_to_serve;
-            Tables[readyqueue[readypointer]].current_capacity -= student_to_serve;
-            if (Tables[readyqueue[readypointer]].current_capacity == 0)
-            {
-                readypointer++;
-            }
-        }
+        struct id_number temp;
+        temp.id = i;
+        pthread_create(&Students[i].thread_id, NULL, (void *)Student_loop, &temp);
+        i++;
+        usleep(20);
     }
 }
