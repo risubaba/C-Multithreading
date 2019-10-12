@@ -15,13 +15,6 @@ void swap(int *a, int *b)
     *b = temp;
 }
 
-int *shareMem(size_t size)
-{
-    key_t mem_key = IPC_PRIVATE;
-    int shm_id = shmget(mem_key, size, IPC_CREAT | 0666);
-    return (int *)shmat(shm_id, NULL, 0);
-}
-
 typedef struct arg
 {
     int l;
@@ -29,13 +22,19 @@ typedef struct arg
     int *arr;
 } arg;
 
+int *shareMem(size_t size)
+{
+    key_t mem_key = IPC_PRIVATE;
+    int shm_id = shmget(mem_key, size, IPC_CREAT | 0666);
+    return (int *)shmat(shm_id, NULL, 0);
+}
+
+
 int partition(int arr[], int l, int r)
 {
-    swap(&arr[(r + l) / 2], &arr[r - 1]);
+    int random_pivot = rand() % (r - l) + l;
+    swap(&arr[random_pivot], &arr[r - 1]);
     int pivot = arr[r - 1];
-    // if (r-l<10){
-    // printf("PIVOT ++++ %d\n",pivot);
-    // }
     int j = l - 1;
     for (int i = l; i < r - 1; i++)
     {
@@ -54,7 +53,6 @@ void issorted(int arr[], int l, int r)
     for (int i = l; i < r - 1; i++)
         if (arr[i] > arr[i + 1])
         {
-            // printf("%d %d", arr[i], arr[i + 1]);
             printf("Not Sorted\n");
             return;
         }
@@ -75,7 +73,7 @@ void smolsort(int arr[], int l, int r)
                 key = arr[j];
             }
         }
-        swap(&arr[i], &arr[ind]);	Calculated weight	Grade	Range	Percentage	Feedback	
+        swap(&arr[i], &arr[ind]);
     }
 }
 
@@ -93,7 +91,7 @@ void Process_quicksort(int arr[], int l, int r)
     if (pid < 0)
     {
         printf("Error while forking\n");
-        return ;
+        return;
     }
     else if (pid == 0)
     {
@@ -103,7 +101,6 @@ void Process_quicksort(int arr[], int l, int r)
     else
     {
         int status2;
-        // printf("%d %d\n", l, (l + r) / 2);
         Process_quicksort(arr, par + 1, r);
         waitpid(pid, &status2, 0);
     }
@@ -125,7 +122,6 @@ void *Thread_quicksort(void *thr)
     pthread_t tidll, tidrr;
     struct arg ll, rr;
     int par = partition(arr, l, r);
-    // printf("par is %d\n",par);
     ll.l = l, ll.r = par, ll.arr = arr;
     rr.l = par + 1, rr.r = r, rr.arr = arr;
     pthread_create(&tidll, NULL, (void *)Thread_quicksort, &ll);
@@ -147,39 +143,38 @@ void Normal_quicksort(int arr[], int l, int r)
     Normal_quicksort(arr, par + 1, r);
 }
 
-int main()
+long double getTime()
 {
     struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    return ts.tv_nsec / (1e9) + ts.tv_sec;
+}
+
+int main()
+{
     int n;
     scanf("%d", &n);
     int *arr = shareMem(4 * n);
     int *crr = shareMem(4 * n);
     brr = shareMem(4 * n);
     for (int i = 0; i < n; i++)
-        arr[i] = n - i, crr[i] = arr[i];
+        arr[i] = rand()%10000, crr[i] = arr[i];
     // scanf("%d", &arr[i]), crr[i] = arr[i];
 
-    int l = 0, r = n;
     //quicksort(arr,l,r) sorts [l,r)
-
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    long double st = ts.tv_nsec / (1e9) + ts.tv_sec;
+    int l = 0, r = n;
+    long double st = getTime();
     Normal_quicksort(arr, l, r);
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    long double en = ts.tv_nsec / (1e9) + ts.tv_sec;
-    printf("Time for Normal Quicksort is %Lfs\n",en-st);
+    long double timefornormal = getTime()-st;
+    printf("Time for Normal Quicksort is %Lfs\n", timefornormal);
 
     issorted(arr, l, r);
     for (int i = 0; i < n; i++)
         arr[i] = crr[i];
-
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    st = ts.tv_nsec / (1e9) + ts.tv_sec;
+    st = getTime();
     Process_quicksort(arr, l, r);
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    en = ts.tv_nsec / (1e9) + ts.tv_sec;
-    printf("Time for Concurrent Quicksort is %Lfs\n",en-st);
-
+    long double timeforConcurrent = getTime()-st;
+    printf("Time for Concurrent Quicksort is %Lfs\n", timeforConcurrent);
     issorted(arr, l, r);
 
     for (int i = 0; i < n; i++)
@@ -189,16 +184,16 @@ int main()
     thr.l = 0;
     thr.r = n;
     thr.arr = arr;
-
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    st = ts.tv_nsec / (1e9) + ts.tv_sec;
+    st = getTime();
     pthread_create(&tid, NULL, (void *)Thread_quicksort, &thr);
     pthread_join(tid, NULL);
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    en = ts.tv_nsec / (1e9) + ts.tv_sec;
-    printf("Time for Threaded Quicksort is %Lfs\n",en-st);
-
+    long double timeforThreaded = getTime()-st;
+    printf("Time for Threaded Quicksort is %Lfs\n", timeforThreaded);
     issorted(arr, l, r);
+
+    printf("Threaded Quicksort is %Lf times slower than Normal Quicksort\n",(timeforThreaded)/(timefornormal));
+    printf("Concurrent Quicksort is %Lf times slower than Normal Quicksort\n",(timeforConcurrent)/(timefornormal));
+
 
     return 0;
 }
